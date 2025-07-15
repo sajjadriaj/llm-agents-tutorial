@@ -1,72 +1,37 @@
-
-# MCP Server Tutorial: A Simple Implementation
-#
-# Welcome to the MCP Server Tutorial!
-#
-# This file contains a simple, yet functional, implementation of a Model Context Protocol (MCP) server.
-# MCP is a protocol that allows AI models to interact with external tools and data sources.
-# This server will be a basic example of how such a server can be built.
-#
-# We will use the Flask web framework to create our server. Flask is a lightweight
-# and popular choice for building web applications and APIs in Python.
-#
-# ---
-#
-# ## Setup and Installation
-#
-# Before you can run this server, you need to have Python installed on your system.
-# You will also need to install the Flask library. You can install it using pip:
-#
-# pip install Flask
-#
-# ---
-#
-# ## Running the Server
-#
-# To run the server, simply execute this Python file from your terminal:
-#
-# python mcp_server_tutorial.py
-#
-# The server will start and listen for incoming requests on http://127.0.0.1:5000.
-#
-# ---
-#
-# ## How to Interact with the Server
-#
-# You can interact with this server by sending HTTP requests to its endpoints.
-# We will define two endpoints:
-#
-# 1.  `/`: A simple endpoint to check if the server is running.
-# 2.  `/mcp`: The main endpoint for handling MCP requests.
-#
-# You can use a tool like `curl` or a graphical API client like Postman to send requests.
-#
-# ---
-
-# Let's start with the implementation.
-
-# First, we import the necessary components from the Flask library.
-# - Flask: The main class for creating our web application.
-# - request: An object that holds information about the incoming HTTP request.
-# - jsonify: A function to convert Python dictionaries into JSON responses.
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
+import os
 
 # We import the components from our other files.
-from resources import ResourceManager
-from tools import FileReaderTool
+from tools import initialize_mcp_components
 from prompts import format_prompt
 
 # We create an instance of the Flask class. This `app` object will be our server.
 app = Flask(__name__)
 
-# We create instances of our resource manager and tools.
-resources = ResourceManager()
-file_reader_tool = FileReaderTool(resources)
+# Initialize MCP components using the new organized structure
+resource_registry, prompt_registry, tool_registry = initialize_mcp_components()
 
-# We define a dictionary to hold our available tools.
-tools = {
-    "file_reader": file_reader_tool
-}
+# Get the organized tools from the registry
+tools = tool_registry.get_tools_dict()
+
+# ---
+# ## UI Endpoint: Serve the Visual Walkthrough
+#
+# This endpoint serves the beautiful UI for the visual walkthrough
+@app.route('/ui')
+def ui_walkthrough():
+    """
+    Serves the visual walkthrough UI
+    """
+    return send_from_directory('ui', 'index.html')
+
+# Serve static files from the UI directory
+@app.route('/app.js')
+def serve_app_js():
+    """
+    Serves the app.js file for the UI
+    """
+    return send_from_directory('ui', 'app.js')
 
 # ---
 # ## Endpoint 1: The Root Endpoint (`/`)
@@ -79,7 +44,16 @@ def index():
     """
     A simple endpoint to confirm the server is running.
     """
-    return "Welcome to the Simple MCP Server!"
+    return """
+    <h1>🔧 MCP Server is Running!</h1>
+    <p>Welcome to the Model Context Protocol Server</p>
+    <ul>
+        <li><a href="/ui">🎨 Visual Walkthrough</a> - Beautiful UI tutorial</li>
+        <li><a href="/capabilities">🔍 Server Capabilities</a> - Available tools and resources</li>
+        <li><a href="/health">💚 Health Check</a> - Server status</li>
+    </ul>
+    <p>For the full tutorial, open the Jupyter notebook: <code>mcp_architecture_tutorial.ipynb</code></p>
+    """
 
 # ---
 # ## Endpoint 2: The MCP Endpoint (`/mcp`)
@@ -114,15 +88,92 @@ def mcp_handler():
     if tool_name in tools:
         # We get the tool from our dictionary of available tools.
         tool = tools[tool_name]
-        # We run the tool with the given parameters.
-        result = tool.run(parameters)
-        return jsonify(result)
+        
+        # All MCP tools should use the standard `run` method
+        try:
+            result = tool.run(parameters)
+            return jsonify({"success": True, "result": result})
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
     else:
         # If the requested tool is not supported, we return an error.
         return jsonify({"error": f"Unsupported tool: {tool_name}"}), 400
 
 # ---
-# ## Endpoint 3: The Prompting Endpoint (`/prompt`)
+# ## Endpoint 3: The Capabilities Endpoint (`/capabilities`)
+#
+# This endpoint returns information about the server's capabilities,
+# including available tools and their parameters.
+#
+@app.route('/capabilities', methods=['GET'])
+def capabilities_handler():
+    """
+    Returns server capabilities and available tools.
+    """
+    # Get tools info from tool registry
+    tools_info = tool_registry.list_tools()
+    
+    # Get available prompts from prompt registry
+    prompts_info = prompt_registry.list_prompts()
+    
+    # Get available resources from resource registry
+    resources_info = resource_registry.list_resources()
+    
+    capabilities = {
+        "server_version": "1.0.0",
+        "server_name": "MCP Server Tutorial",
+        "description": "A tutorial MCP server providing organized tools, resources, and prompts",
+        "tools": tools_info,
+        "prompts": prompts_info,
+        "resources": resources_info,
+        "supported_endpoints": [
+            "/",
+            "/mcp",
+            "/capabilities",
+            "/prompt",
+            "/health"
+        ]
+    }
+    return jsonify(capabilities)
+
+# ---
+# ## Endpoint 4: The Health Check Endpoint (`/health`)
+#
+# This endpoint provides health information about the server and its dependencies.
+#
+@app.route('/health', methods=['GET'])
+def health_handler():
+    """
+    Returns health status of the server and its dependencies.
+    """
+    # Check API configurations
+    gemini_configured = bool(os.getenv('GEMINI_API_KEY'))
+    brave_configured = bool(os.getenv('BRAVE_SEARCH_API_KEY'))
+    
+    # Check tool registry health
+    available_tools = tool_registry.list_tools()
+    tool_health = {name: "ready" for name in available_tools.keys()}
+    
+    health_status = {
+        "status": "healthy",
+        "timestamp": __import__('datetime').datetime.now().isoformat(),
+        "version": "1.0.0",
+        "components": {
+            "tool_registry": f"{len(available_tools)} tools available",
+            "prompt_registry": f"{len(prompt_registry.list_prompts())} prompts available",
+            "resource_registry": f"{len(resource_registry.list_resources())} resources available"
+        },
+        "api_checks": {
+            "gemini_api": "configured" if gemini_configured else "not_configured",
+            "brave_search_api": "configured" if brave_configured else "not_configured"
+        },
+        "tools": tool_health
+    }
+    
+    return jsonify(health_status)
+
+# ---
+# ## Endpoint 5: The Prompting Endpoint (`/prompt`)
 #
 # This endpoint is for generating prompts that can be sent to an AI model.
 # It takes a prompt template and a text as input, and returns a formatted prompt.

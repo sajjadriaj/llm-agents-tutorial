@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Server</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-4 bg-white text-black min-h-screen">
+    <!-- Header -->
+    <div class="mb-4">
+        <h1 class="text-2xl font-bold mb-1">MCP Server</h1>
+        <p class="text-gray-600 text-sm">Model Context Protocol Server Interface</p>
+    </div>
+    
+    <!-- Grid Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-120px)]">
+        
+        <!-- Left Column: Server Status -->
+        <div class="lg:col-span-1">
+            <div class="h-full p-4 border border-gray-300 rounded-lg bg-gray-50">
+                <h2 class="text-lg font-bold mb-3">Server Status</h2>
+                <div class="space-y-2">
+                    <p><strong>Status:</strong> <span id="status" class="text-green-600">Checking...</span></p>
+                    <div id="serverInfo" class="mt-3 p-3 bg-white rounded border text-xs overflow-y-auto max-h-48">
+                        <pre>Loading server information...</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle Column: Available Tools -->
+        <div class="lg:col-span-1">
+            <div class="h-full p-4 border border-gray-300 rounded-lg bg-gray-50">
+                <h2 class="text-lg font-bold mb-3">Available Tools</h2>
+                <div id="toolsList" class="space-y-2 overflow-y-auto max-h-[calc(100vh-200px)]">
+                    <div class="text-center py-4 text-gray-500 text-sm">Loading tools...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Tool Tester -->
+        <div class="lg:col-span-1">
+            <div class="h-full p-4 border border-gray-300 rounded-lg bg-gray-50">
+                <h2 class="text-lg font-bold mb-3">Test Tool</h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Select Tool:</label>
+                        <select id="toolSelect" class="w-full p-2 border border-gray-300 rounded-lg bg-white text-sm">
+                            <option value="">Select a tool...</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Parameter Examples -->
+                    <div id="parameterExamples" class="hidden">
+                        <label class="block text-sm font-medium mb-1">Example Parameters:</label>
+                        <div id="examplesList" class="flex flex-wrap gap-1 mb-2"></div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Parameters (JSON):</label>
+                        <textarea 
+                            id="toolParams" 
+                            class="w-full p-2 border border-gray-300 rounded-lg bg-white font-mono text-xs" 
+                            rows="4" 
+                            placeholder='Select a tool to see parameter examples'></textarea>
+                    </div>
+                    
+                    <button 
+                        onclick="testTool()" 
+                        class="w-full px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm">
+                        Execute Tool
+                    </button>
+                    
+                    <div id="result" class="hidden mt-3 p-3 bg-white rounded-lg border">
+                        <h3 class="font-bold mb-2 text-sm">Result:</h3>
+                        <pre id="resultContent" class="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-40"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

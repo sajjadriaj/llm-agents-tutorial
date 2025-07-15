@@ -1,0 +1,16 @@
+This is a sample resource file for the MCP server tutorial.
+
+The MCP server can access files in the resources directory through the FileReaderTool.
+This demonstrates how the server can provide access to data and documents while keeping
+the actual agent logic on the client side.
+
+Key facts about MCP architecture:
+- Server provides tools and resources
+- Client contains agents and business logic
+- Clear separation of concerns
+- Scalable and maintainable design
+
+Example usage:
+- Agents can request to read this file
+- Server provides the content via the file_reader tool
+- Agent processes the content according to its logic

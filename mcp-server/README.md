@@ -1,424 +1,325 @@
-# MCP Server Tutorial: IN PROGRESS
+# MCP Server Tutorial - Proper Architecture
 
-A comprehensive tutorial for building Model Context Protocol (MCP) servers using Python and Flask. This tutorial provides a practical, hands-on approach to understanding and implementing MCP servers.
+This tutorial demonstrates the **correct** MCP (Model Context Protocol) architecture where:
 
-## 📖 What is MCP?
+- **Server**: Provides tools and resources
+- **Client**: Contains agents and business logic
+- **Clear separation of concerns**
 
-**Model Context Protocol (MCP)** is a protocol that enables AI models to interact with external tools and data sources. This allows AI models to:
+## 🏗️ Architecture Overview
 
-- Access real-world information
-- Perform actions in external systems
-- Integrate with databases, APIs, and file systems
-- Extend their capabilities beyond text generation
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   CLIENT SIDE   │    │   MCP SERVER    │    │   RESOURCES     │
+│                 │    │                 │    │                 │
+│  ┌───────────┐  │    │  ┌───────────┐  │    │  ┌───────────┐  │
+│  │  Agents   │  │    │  │   Tools   │  │    │  │   Files   │  │
+│  │           │  │    │  │           │  │    │  │           │  │
+│  │ • Fact    │  │    │  │ • Web     │  │    │  │ • Docs    │  │
+│  │ • Sent    │  │    │  │ • Wiki    │  │    │  │ • Data    │  │
+│  │ • Orch    │  │    │  │ • LLM     │  │    │  │ • Config  │  │
+│  └───────────┘  │    │  │ • File    │  │    │  └───────────┘  │
+│                 │    │  └───────────┘  │    │                 │
+│  ┌───────────┐  │    │                 │    │  ┌───────────┐  │
+│  │ MCP Client│  │◄──►│  ┌───────────┐  │    │  │ Databases │  │
+│  └───────────┘  │    │  │   API     │  │    │  └───────────┘  │
+│                 │    │  │ Endpoints │  │    │                 │
+└─────────────────┘    │  └───────────┘  │    └─────────────────┘
+                       │                 │
+                       │  ┌───────────┐  │
+                       │  │ Registries│  │
+                       │  │           │  │
+                       │  │ • Tools   │  │
+                       │  │ • Prompts │  │
+                       │  │ • Resources│  │
+                       │  └───────────┘  │
+                       └─────────────────┘
+```
 
-## 🎯 Tutorial Overview
-
-This tutorial provides a complete, production-ready implementation of an MCP server with detailed explanations for each component.
-
-### 📁 Project Structure
+## 📁 File Structure
 
 ```
 mcp-server/
-├── .env                      # Environment variables (create this)
-├── README.md                 # This file
-├── mcp_server_tutorial.py    # Main server implementation
-├── tools.py                  # Tool definitions and handlers
-├── resources.py              # Resource management
-└── prompts.py               # Prompt templates and formatting
+├── README.md                          # This file
+├── requirements.txt                   # Python dependencies
+├── mcp_server_tutorial.py            # ✅ MCP Server (tools & resources)
+├── tools.py                          # ✅ Organized tool registries
+├── client_agents.py                  # ✅ Client-side agents
+├── mcp_architecture_tutorial.ipynb   # ✅ Interactive tutorial notebook
+├── mcp_client_demo.py                # ✅ Client demo script
+├── resources.py                      # Resource management
+├── prompts.py                        # Prompt templates
+├── ui/                               # Beautiful web UI
+│   ├── index.html                    # Visual walkthrough
+│   └── app.js                        # Interactive functionality
+└── resources/                        # Resource files
+    └── sample.txt
 ```
 
-### ✨ Features
+## 🚀 Quick Start
 
-- **Flask-based Web Server** - RESTful API endpoints
-- **Modular Architecture** - Clean separation of concerns
-- **Tool System** - Extensible tool framework
-- **Resource Management** - File and data handling
-- **Prompt Engineering** - Dynamic prompt generation
-- **Error Handling** - Robust error management
-- **Comprehensive Documentation** - Detailed code comments
+### 1. Install Dependencies
 
-## 🚀 Getting Started
+```bash
+cd /home/sajjad/workspace/tutorials/mcp-server
+pip install -r requirements.txt
+```
 
-### Prerequisites
+### 2. Set Environment Variables
 
-- **Python 3.10+** - Modern Python version
-- **pip** - Python package installer
-- **Basic knowledge** of Python and web APIs
+Create a `.env` file in the project directory:
 
-### Installation
+```bash
+# Create .env file
+touch .env
 
-1. **Navigate to the tutorials directory:**
-   ```bash
-   cd tutorials
-   ```
+# Add your API keys to .env file
+echo "GEMINI_API_KEY=your_gemini_api_key_here" >> .env
+echo "BRAVE_SEARCH_API_KEY=your_brave_search_api_key_here" >> .env
+```
 
-2. **Create a virtual environment (recommended):**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+**Note**: The server automatically loads environment variables from the `.env` file using `python-dotenv`.
 
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Navigate to the MCP server directory:**
-   ```bash
-   cd mcp-server
-   ```
-
-5. **Set up environment variables:**
-   Create a `.env` file in this directory:
-   ```env
-   # Server configuration
-   FLASK_ENV=development
-   FLASK_DEBUG=True
-   
-   # Add any API keys here if needed
-   # GEMINI_API_KEY=gemini api key here
-   ```
-
-### Running the Server
-
-Start the MCP server:
+### 3. Start the MCP Server
 
 ```bash
 python mcp_server_tutorial.py
 ```
 
-The server will start at `http://127.0.0.1:5000` with the following endpoints:
-- **`/mcp`** - Main MCP protocol endpoint
-- **`/prompt`** - Prompt generation endpoint
-- **`/health`** - Health check endpoint
+The server will start on `http://localhost:5000`
 
-## 🔧 How to Use
+### 4. Explore the Tutorial
 
-### MCP Endpoint (`/mcp`)
-
-The main MCP protocol endpoint handles tool requests and resource access.
-
-#### Available Tools
-
-- **`file_reader`** - Read content from predefined files
-- **`calculator`** - Perform mathematical calculations
-- **`text_processor`** - Process and transform text
-
-#### Example: File Reader Tool
-
-**Request:**
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{
-  "tool": "file_reader",
-  "parameters": {
-    "filename": "example.txt"
-  }
-}' http://127.0.0.1:5000/mcp
+# 🎨 Beautiful Web UI - Visual walkthrough
+# Visit http://localhost:5000/ui
+
+# 📚 Interactive Jupyter Notebook
+# Open mcp_architecture_tutorial.ipynb in VS Code or Jupyter
+
+# 🖥️ Command Line Demo
+python mcp_client_demo.py
+
+# 🤖 Direct Agent Usage
+python client_agents.py
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "content": "This is the content of example.txt.",
-  "metadata": {
-    "tool": "file_reader",
-    "filename": "example.txt",
-    "timestamp": "2025-07-11T10:30:00Z"
-  }
-}
+## 🎨 Beautiful Web UI
+
+The MCP server includes a stunning visual walkthrough accessible at `http://localhost:5000/ui`:
+
+### ✨ **Features:**
+- **🏗️ Architecture Overview**: Visual diagrams and explanations
+- **🛠️ Tool Explorer**: Interactive tool documentation and examples
+- **🤖 Agent Showcase**: Step-by-step agent workflows
+- **🎮 Live Demo**: Test tools directly from the browser
+- **📱 Responsive Design**: Beautiful on desktop and mobile
+- **🎯 Real-time Status**: Live server health and capabilities
+
+### 🚀 **Getting Started:**
+1. Start the server: `python mcp_server_tutorial.py`
+2. Visit: `http://localhost:5000/ui`
+3. Explore the interactive sections
+4. Test tools with real server responses
+
+The UI is built with **Tailwind CSS** for a modern, clean aesthetic and provides an intuitive way to understand the MCP architecture.
+
+## 🛠️ Server Components
+
+### 🔧 Tool Registry
+- **FileReaderTool**: Read files from server resources
+- **WebSearchTool**: Search the web using Brave Search API  
+- **WikipediaTool**: Search Wikipedia for information
+- **LLMTool**: Generate text using Gemini LLM
+- **PromptFormatterTool**: Format prompts using templates
+
+### 📁 Resource Registry
+- Manages server files and data
+- Provides caching for frequently accessed resources
+- Handles resource discovery and access
+
+### 📝 Prompt Registry
+- Common prompt templates for different tasks
+- Fact extraction, sentiment analysis, summarization
+- Consistent prompt formatting across tools
+
+**Note**: All registries are now properly organized and no longer use legacy backward-compatible wrappers.
+
+## 🤖 Client-side Agents
+
+### FactExtractorAgent
+- Extracts facts from text using local LLM
+- Can use web search and Wikipedia for research
+- Returns structured fact data
+
+### SentimentAnalyzerAgent
+- Analyzes sentiment and emotional tone
+- Can use external context for better analysis
+- Returns sentiment scores and justifications
+
+### OrchestrationAgent
+- Coordinates multiple agents and tools
+- Decides processing strategy based on query
+- Synthesizes comprehensive responses
+
+## 📊 API Endpoints
+
+### Server Endpoints
+- `GET /` - Welcome message
+- `POST /mcp` - Main MCP tool execution
+- `GET /capabilities` - Server capabilities and tools
+- `GET /health` - Server health status
+- `POST /prompt` - Prompt formatting
+
+### Tool Usage
+```python
+# Use web search tool
+client.use_tool("web_search", {
+    "query": "latest AI developments",
+    "count": 5
+})
+
+# Use Wikipedia tool
+client.use_tool("wikipedia", {
+    "query": "artificial intelligence",
+    "sentences": 3
+})
+
+# Use LLM tool
+client.use_tool("llm", {
+    "prompt": "Explain quantum computing",
+    "max_tokens": 500
+})
 ```
 
-#### Example: Calculator Tool
+## 🎯 Key Benefits
 
-**Request:**
+### ✅ Proper Architecture
+- Clear separation between server (tools) and client (agents)
+- Follows MCP specification standards
+- Scalable and maintainable design
+
+### ✅ Organized Structure
+- Tool registry for easy tool management
+- Resource registry for efficient resource handling
+- Prompt registry for consistent prompt templates
+
+### ✅ Flexible Agents
+- Client-side agents can use any combination of server tools
+- Easy to create specialized agents for specific tasks
+- Proper error handling and fallback mechanisms
+
+### ✅ Production Ready
+- Health checks and monitoring
+- Capability discovery
+- Comprehensive error handling
+- Performance optimization
+
+## 🔧 Development
+
+### Adding New Tools
+1. Create tool class in `tools.py` following the standard pattern
+2. Register in `ToolRegistry._initialize_default_tools()`
+3. Server automatically exposes via `/mcp` endpoint
+4. All tools must implement the `run(parameters)` method
+
+### Adding New Agents
+1. Create agent class in `client_agents.py`
+2. Use `MCPClient` to access server tools via `/mcp` endpoint
+3. Implement proper error handling and logging
+
+### Adding New Resources
+1. Add resource files to `resources/` directory
+2. Register in `initialize_mcp_components()` function
+3. Access via `FileReaderTool` using proper resource names
+
+## 🧪 Testing
+
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{
-  "tool": "calculator",
-  "parameters": {
-    "expression": "2 + 3 * 4"
-  }
-}' http://127.0.0.1:5000/mcp
+# Test server health
+curl http://localhost:5000/health
+
+# Test capabilities
+curl http://localhost:5000/capabilities
+
+# Test tool usage
+curl -X POST http://localhost:5000/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"tool": "web_search", "parameters": {"query": "test"}}'
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "result": 14,
-  "expression": "2 + 3 * 4",
-  "metadata": {
-    "tool": "calculator",
-    "timestamp": "2025-07-11T10:30:00Z"
-  }
-}
-```
+## 📚 Learning Resources
 
-### Prompt Endpoint (`/prompt`)
+1. **🎨 Visual Walkthrough**: Visit `http://localhost:5000/ui` for a beautiful interactive UI
+2. **📚 Interactive Tutorial**: Open `mcp_architecture_tutorial.ipynb` in VS Code or Jupyter
+3. **🖥️ Command Line Demo**: Run `python mcp_client_demo.py` for terminal-based examples
+4. **🤖 Example Agents**: Check `client_agents.py` for implementation patterns
+5. **🔧 Server Tools**: Review `tools.py` for organized tool structure
+6. **📖 MCP Specification**: Official Model Context Protocol documentation
 
-Generate formatted prompts for AI models.
+## 🔒 Security Notes
 
-#### Example: Dynamic Prompt Generation
+- Server validates all inputs and parameters
+- Client agents handle authentication and authorization  
+- Resource access is controlled by server
+- API keys are managed securely via `.env` file (never commit to version control)
+- All tool responses follow standardized success/error format
 
-**Request:**
-```bash
-curl -X POST -H "Content-Type: application/json" -d '{
-  "prompt_template": "analyze_text",
-  "variables": {
-    "text": "This is a sample text to analyze.",
-    "task": "sentiment analysis"
-  }
-}' http://127.0.0.1:5000/prompt
-```
+## 📈 Performance Tips
 
-**Response:**
-```json
-{
-  "success": true,
-  "formatted_prompt": "Please perform sentiment analysis on the following text: This is a sample text to analyze.",
-  "template": "analyze_text",
-  "variables": {
-    "text": "This is a sample text to analyze.",
-    "task": "sentiment analysis"
-  }
-}
-```
-
-### Health Check Endpoint (`/health`)
-
-Check server status and configuration.
-
-**Request:**
-```bash
-curl http://127.0.0.1:5000/health
-```
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "version": "1.0.0",
-  "timestamp": "2025-07-11T10:30:00Z",
-  "available_tools": ["file_reader", "calculator", "text_processor"]
-}
-```
-
-## 🏗️ Architecture Overview
-
-### Core Components
-
-```
-MCP Server Architecture
-├── Flask Application (mcp_server_tutorial.py)
-│   ├── Route Handlers
-│   ├── Request Validation
-│   └── Response Formatting
-├── Tool System (tools.py)
-│   ├── Tool Registry
-│   ├── Tool Execution
-│   └── Parameter Validation
-├── Resource Manager (resources.py)
-│   ├── File System Access
-│   ├── Data Persistence
-│   └── Resource Caching
-└── Prompt Engine (prompts.py)
-    ├── Template System
-    ├── Variable Substitution
-    └── Prompt Formatting
-```
-
-### Key Design Patterns
-
-- **Modular Architecture** - Separate concerns into focused modules
-- **Plugin System** - Easy tool registration and extension
-- **Template Engine** - Dynamic prompt generation
-- **Error Handling** - Graceful failure management
-- **Validation** - Input sanitization and type checking
-
-## 📚 Learning Objectives
-
-By completing this tutorial, you'll understand:
-
-1. **MCP Protocol Basics** - How MCP enables AI-tool interaction
-2. **Server Architecture** - Building scalable API servers
-3. **Tool Integration** - Creating and managing external tools
-4. **Resource Management** - Handling files and data safely
-5. **Prompt Engineering** - Dynamic prompt generation
-6. **Error Handling** - Building robust server applications
-7. **API Design** - RESTful endpoint patterns
-
-## 🛠️ Configuration
-
-### Environment Variables
-
-Create a `.env` file in the `mcp-server/` directory:
-
-```env
-# Server Configuration
-FLASK_ENV=development
-FLASK_DEBUG=True
-FLASK_PORT=5000
-
-# Security
-SECRET_KEY=your-secret-key-here
-
-# API Keys (if needed)
-GEMINI_API_KEY=your-gemini-api-key
-ANTHROPIC_API_KEY=your-anthropic-key
-
-# Logging
-LOG_LEVEL=INFO
-LOG_FILE=mcp_server.log
-
-# Resource Limits
-MAX_FILE_SIZE=10MB
-MAX_REQUEST_SIZE=100MB
-TIMEOUT_SECONDS=30
-```
-
-### Dependencies
-
-Dependencies are managed in the parent `tutorials/requirements.txt` file which includes:
-
-```txt
-# Core dependencies for all tutorials
-jupyter>=1.0.0
-python-dotenv>=1.0.0
-requests>=2.31.0
-
-# LLM and AI dependencies
-google-generativeai>=0.3.0
-wikipediaapi>=0.6.0
-
-# Web framework for MCP server tutorial
-Flask>=2.3.0
-```
+- Use connection pooling for multiple requests
+- Implement caching for frequently accessed resources
+- Monitor server health and resource usage
+- Use async patterns for long-running operations
 
 ## 🔧 Troubleshooting
 
 ### Common Issues
 
-**Server won't start:**
-- Check if port 5000 is available
-- Verify Python version (3.10+)
-- Ensure all dependencies are installed
+**400 Bad Request Errors**
+- Check that `.env` file exists and contains valid API keys
+- Restart server after updating `.env` file
+- Verify request format matches expected parameters
 
-**Tool execution fails:**
-- Verify tool parameters are correct
-- Check file permissions for file_reader
-- Review server logs for detailed errors
+**API Key Issues**
+- Ensure API keys are properly set in `.env` file
+- Check that `python-dotenv` is installed
+- Verify API keys are valid and have necessary permissions
 
-**API responses are empty:**
-- Confirm request format matches examples
-- Check Content-Type header is set correctly
-- Verify endpoint URLs are correct
+**Tool Errors**
+- Use `/health` endpoint to check server status
+- Check `/capabilities` endpoint for available tools
+- Review server logs for detailed error messages
 
-### Debug Mode
+**Connection Issues**
+- Verify server is running on correct port (5000)
+- Check firewall settings
+- Ensure no other processes are using port 5000
 
-Enable debug mode by setting in `.env`:
-```env
-FLASK_DEBUG=True
-LOG_LEVEL=DEBUG
+### Debug Commands
+
+```bash
+# Check server health
+curl http://localhost:5000/health
+
+# Check capabilities
+curl http://localhost:5000/capabilities
+
+# Test basic tool
+curl -X POST http://localhost:5000/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"tool": "wikipedia", "parameters": {"query": "test"}}'
 ```
 
 ## 🚀 Next Steps
 
-### Extending the Server
+1. **Extend Tools**: Add domain-specific tools for your use case
+2. **Create Specialized Agents**: Build agents for specific workflows
+3. **Add Monitoring**: Implement comprehensive logging and metrics
+4. **Deploy Production**: Set up proper deployment with load balancing
 
-1. **Add New Tools:**
-   - Database connectors
-   - Web scraping tools
-   - API integrations
-   - File processing tools
+---
 
-2. **Enhance Security:**
-   - Authentication middleware
-   - Rate limiting
-   - Input validation
-   - CORS configuration
+**Happy coding!** 🎉
 
-3. **Improve Performance:**
-   - Caching layer
-   - Async processing
-   - Connection pooling
-   - Load balancing
-
-4. **Add Features:**
-   - WebSocket support
-   - Streaming responses
-   - Batch processing
-   - Tool chaining
-
-### Integration Examples
-
-- **OpenAI GPT Integration** - Connect to OpenAI API
-- **Claude Integration** - Use Anthropic's Claude
-- **Local LLM** - Integrate with local models
-- **Database Tools** - SQL query execution
-- **Web APIs** - REST API connectors
-
-## 📄 API Reference
-
-### MCP Endpoint
-
-**POST `/mcp`**
-
-Request body:
-```json
-{
-  "tool": "string",
-  "parameters": {
-    "key": "value"
-  }
-}
-```
-
-Response:
-```json
-{
-  "success": true,
-  "result": "any",
-  "metadata": {
-    "tool": "string",
-    "timestamp": "ISO-8601"
-  }
-}
-```
-
-### Prompt Endpoint
-
-**POST `/prompt`**
-
-Request body:
-```json
-{
-  "prompt_template": "string",
-  "variables": {
-    "key": "value"
-  }
-}
-```
-
-Response:
-```json
-{
-  "success": true,
-  "formatted_prompt": "string",
-  "template": "string",
-  "variables": {}
-}
-```
-
-### Health Endpoint
-
-**GET `/health`**
-
-Response:
-```json
-{
-  "status": "healthy",
-  "version": "string",
-  "timestamp": "ISO-8601",
-  "available_tools": ["string"]
-}
-```
+For questions or contributions, check the tutorial files and examples in this directory.
